@@ -1,0 +1,31 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "C:\\mingw-w64\\i686-7.3.0-posix-dwarf-rt_v5-rev0\\mingw32\\i686-w64-mingw32\\include"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "${workspaceFolder}",
+                "C:/mingw-w64/i686-7.3.0-posix-dwarf-rt_v5-rev0/mingw32/i686-w64-mingw32/include",
+                "${workspaceFolder}/lib/inc",
+                "${workspaceFolder}/inc"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "__cdecl=__attribute__((__cdecl__))"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64",
+            "compilerPath": "C:\\SysGCC\\raspberry\\bin\\arm-linux-gnueabihf-g++.exe"
+        }
+    ],
+    "version": 4
+}

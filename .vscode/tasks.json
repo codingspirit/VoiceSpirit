@@ -1,0 +1,22 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "make",
+            "type": "shell",
+            "command": "make -j4",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "make debug and deploy",
+            "type": "shell",
+            "command": "make debug -j4; . .vscode/deploy_on_remote.sh",
+            "group": "test",
+        },
+    ]
+}
