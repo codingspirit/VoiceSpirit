@@ -1,8 +1,8 @@
 CC:=arm-linux-gnueabihf-g++
 TARGET:=VoiceSpirit
 SRC_DIR:=source
-OBJ_DIR:="build/object"
-OUT_DIR:="build/output"
+OBJ_DIR:=build/object
+OUT_DIR:=build/output
 SOURCES:=$(wildcard $(SRC_DIR)/*.cpp)
 INC_DIR:= \
 	-I./include \
@@ -24,10 +24,10 @@ LINK_FLAGS:= \
 	-lblas
 
 $(OUT_DIR)/$(TARGET):$(OBJECTS)
-	@-[ -d $(OUT_DIR) ] || mkdir $(OUT_DIR)
+	@-[ -d $(OUT_DIR) ] || mkdir -p $(OUT_DIR)
 	$(CC) $^ $(LINK_FLAGS) -o $@
 $(OBJ_DIR)/%.o:$(SRC_DIR)/%.cpp
-	@-[ -d $(OBJ_DIR) ] || mkdir $(OBJ_DIR)
+	@-[ -d $(OBJ_DIR) ] || mkdir -p $(OBJ_DIR)
 	$(CC) $(CC_FLAGS) $< -o $@
 .PHONY:clean
 clean:

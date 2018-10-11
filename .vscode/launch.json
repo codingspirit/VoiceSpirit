@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "preLaunchTask": "make debug and deploy",
-            "miDebuggerServerAddress": "192.168.155.2:1234",
+            "miDebuggerServerAddress": "192.168.1.50:1234",
             "program": "${workspaceRoot}\\build\\output\\VoiceSpirit_debug",
             "args": [],
             "stopAtEntry": true,
@@ -21,8 +21,8 @@
                 "miDebuggerPath": "C:\\SysGCC\\raspberry\\bin\\arm-linux-gnueabihf-gdb.exe"
             },
             "linux": {
-                "miDebuggerPath": "C:\\SysGCC\\raspberry\\bin\\arm-linux-gnueabihf-gdb.exe"
-            },
+                "miDebuggerPath": "/home/alex/rpi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-gdb"
+            }
         }
     ]
 }

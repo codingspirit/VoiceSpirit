@@ -1,5 +1,5 @@
 #!/bin/sh
-IP_ADDR="192.168.155.2"
+IP_ADDR="192.168.1.50"
 PROJECT="VoiceSpirit"
 EXE_DIR="${pwd}build/output/${PROJECT}_debug"
 DEPLOY_DIR="~/Desktop/${PROJECT}/bin/"

@@ -37,7 +37,7 @@ BasicLogger::~BasicLogger() {
 void BasicLogger::log(const std::string& tag,
                       const LogLevel& level,
                       const std::string& msg) {
-    if (static_cast<std::underlying_type<LogLevel>::type>(level) !=
+    if (static_cast<std::underlying_type<LogLevel>::type>(level) <
         static_cast<std::underlying_type<LogLevel>::type>(m_filterLvl.load()))
         return;
 

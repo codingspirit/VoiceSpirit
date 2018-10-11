@@ -25,6 +25,13 @@
             "cppStandard": "c++17",
             "intelliSenseMode": "clang-x64",
             "compilerPath": "C:\\SysGCC\\raspberry\\bin\\arm-linux-gnueabihf-g++.exe"
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}",
+                "/usr/include/c++/6.3.0"
+            ]
         }
     ],
     "version": 4
