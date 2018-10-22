@@ -63,6 +63,7 @@
         "xtr1common": "cpp",
         "xutility": "cpp",
         "xlocmon": "cpp",
-        "xloctime": "cpp"
+        "xloctime": "cpp",
+        "unordered_set": "cpp"
     },
 }

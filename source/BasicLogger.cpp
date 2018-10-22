@@ -27,12 +27,12 @@ namespace Logger {
 #define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
 // clang-format on
 
+static const std::string TAG = "BasicLogger";
+
 BasicLogger::BasicLogger() : m_filterLvl{LogLevel::DEBUG} {
-    this->log(typeid(*this).name(), LogLevel::INFO, __FUNCTION__);
+    this->log(TAG, LogLevel::INFO, __FUNCTION__);
 }
-BasicLogger::~BasicLogger() {
-    this->log(typeid(*this).name(), LogLevel::INFO, __FUNCTION__);
-}
+BasicLogger::~BasicLogger() { this->log(TAG, LogLevel::INFO, __FUNCTION__); }
 
 void BasicLogger::log(const std::string& tag,
                       const LogLevel& level,
