@@ -26,7 +26,6 @@ class BasicLogger : public BaseClass::Singleton<BasicLogger> {
   private:
     BasicLogger();
     ~BasicLogger();
-    // BasicLogger(LogLevel lowestLogLevel = DEBUG);
 
     std::string getTimeStamp();
 

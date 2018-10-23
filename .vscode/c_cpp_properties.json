@@ -12,7 +12,6 @@
             "includePath": [
                 "${workspaceFolder}",
                 "C:/mingw-w64/i686-7.3.0-posix-dwarf-rt_v5-rev0/mingw32/i686-w64-mingw32/include",
-                "${workspaceFolder}/thirdparty/include",
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/thirdparty/library/include"
             ],
@@ -32,7 +31,8 @@
             "includePath": [
                 "${workspaceFolder}",
                 "${workspaceFolder}/include",
-                "/usr/include/c++/6.3.0"
+                "/usr/include/c++/6.3.0",
+                "${workspaceFolder}/thirdparty/library/include"
             ]
         }
     ],
