@@ -98,7 +98,6 @@ void PortAudioWrapper::init(int bitsPerSample,
     PaStreamParameters outputParameters;
     std::memset(&inputParameters, 0, sizeof(inputParameters));
     std::memset(&outputParameters, 0, sizeof(outputParameters));
-    int abd;
 
     switch (type) {
         case IOType::INPUT:

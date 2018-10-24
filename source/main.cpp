@@ -17,7 +17,9 @@ int main(int argc, char const* argv[]) {
 
     auto recorder = std::make_unique<Audio::Recorder::Recorder>(
         16000, 16, 1, stream->createWriter());
+
     recorder->startRecord();
+
     std::vector<KeyWord::SnowBoyKeyWordDetector::SnowBoyModelConfig> config;
     KeyWord::SnowBoyKeyWordDetector::SnowBoyModelConfig tConfig;
     tConfig.modelFiles = "../resources/alexa.umdl";
@@ -28,6 +30,11 @@ int main(int argc, char const* argv[]) {
     tConfig.keyWords = "jarvis";
     tConfig.sensitivity = "0.8,0.80";
     config.push_back(tConfig);
+    // tConfig.modelFiles = "../resources/OK Google.pmdl";
+    // tConfig.keyWords = "ok google";
+    // tConfig.sensitivity = "0.5";
+    // config.push_back(tConfig);
+
     auto snowBoy = std::make_unique<KeyWord::SnowBoyKeyWordDetector>(
         reader, config, "../resources/common.res", 1.0, true);
 
