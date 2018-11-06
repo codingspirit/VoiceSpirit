@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "preLaunchTask": "make debug and deploy",
-            "miDebuggerServerAddress": "192.168.1.50:1234",
+            "miDebuggerServerAddress": "10.0.1.50:1234",
             "program": "${workspaceRoot}\\build\\output\\VoiceSpirit_debug",
             "args": [],
             "stopAtEntry": true,

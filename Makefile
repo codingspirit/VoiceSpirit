@@ -1,5 +1,6 @@
 CXX:=arm-linux-gnueabihf-g++
 CC:=$(CXX)
+AR:=arm-linux-gnueabihf-ar
 
 TARGET:=VoiceSpirit
 SRC_DIR:=source
@@ -7,11 +8,7 @@ OBJ_DIR:=build/object
 OUT_DIR:=build/output
 SOURCES:=$(wildcard $(SRC_DIR)/*.cpp)
 #thirdparty google start
-GOOGLEAPIS_ASSISTANT_DIR:=thirdparty/google/assistant/embedded/v1alpha2
-GOOGLEAPIS_ASSISTANT_SRCS:=$(wildcard $(GOOGLEAPIS_ASSISTANT_DIR)/*.pb.cc)
-GOOGLEAPIS_ASSISTANT_OBJS:=$(GOOGLEAPIS_ASSISTANT_SRCS:.cc=.o)
-
-GOOGLEAPIS_API_DIR:=thirdparty/google/apis
+GOOGLEAPIS_API_DIR:=thirdparty/google/api
 GOOGLEAPIS_API_SRCS:=$(wildcard $(GOOGLEAPIS_API_DIR)/*.pb.cc)
 
 GOOGLEAPIS_TYPE_DIR:=thirdparty/google/type
@@ -23,8 +20,12 @@ GOOGLEAPIS_RPC_SRCS:=$(wildcard $(GOOGLEAPIS_RPC_DIR)/*.pb.cc)
 GOOGLEAPIS_SRCS:=$(GOOGLEAPIS_API_SRCS) $(GOOGLEAPIS_TYPE_SRCS) $(GOOGLEAPIS_RPC_SRCS)
 GOOGLEAPIS_OBJS:=$(GOOGLEAPIS_SRCS:.cc=.o)
 
+GOOGLEAPIS_ASSISTANT_DIR:=thirdparty/google/assistant/embedded/v1alpha2
+GOOGLEAPIS_ASSISTANT_SRCS:=$(wildcard $(GOOGLEAPIS_ASSISTANT_DIR)/*.pb.cc)
+GOOGLEAPIS_ASSISTANT_OBJS:=$(GOOGLEAPIS_ASSISTANT_SRCS:.cc=.o)
+
 GRPC_GRPCPP_CFLAGS=`pkg-config --cflags grpc++ grpc`
-GRPC_GRPCPP_LDFLAGS=`pkg-config --libs grpc++ grpc`
+#GRPC_GRPCPP_LDFLAGS=`pkg-config --libs grpc++ grpc`
 
 #thirdparty google end
 INC_DIR:= \
@@ -35,42 +36,49 @@ INC_DIR:= \
 OBJECTS:=$(addprefix $(OBJ_DIR)/,$(patsubst %.cpp,%.o,$(notdir $(SOURCES))))
 
 ifeq ($(DEBUG), 1)#debug version, DEBUG:=1
-CXXFLAGS:=-c -g -std=c++14
+CXXFLAGS:=-c -O1 -g -std=c++14
 TARGET:=$(addprefix $(TARGET),_debug)
 else#release version
-CXXFLAGS:=-c -std=c++14
+CXXFLAGS:=-c -O1 -std=c++14
 endif
 
 CXXFLAGS += $(GRPC_GRPCPP_CFLAGS)
 CPPFLAGS:=$(INC_DIR)
 
-LDFLAGS:= $(GRPC_GRPCPP_LDLAGS)\
-	-lpthread \
+#LDFLAGS:= $(GRPC_GRPCPP_LDLAGS)
+
+LDFLAGS:= \
+	-L./thirdparty/library/shared_lib \
+	-lgrpc++ -lgrpc -lgrpc++_reflection -lgrpc_cronet -lgpr -lprotobuf -ldl\
 	-L./thirdparty/library \
 	-lsnowboy-detect -lportaudio -lasound \
 	-L./thirdparty/library/atlas \
-	-lblas
+	-lblas \
+	-pthread
 
-$(OUT_DIR)/$(TARGET):$(OBJECTS)
+$(OUT_DIR)/$(TARGET):$(OBJECTS) $(GOOGLEAPIS_ASSISTANT_OBJS) googleapis.ar
 	@-[ -d $(OUT_DIR) ] || mkdir -p $(OUT_DIR)
 	@echo "Linking: $@"
-	$(CXX) $^ $(LDFLAGS) -o $@
+	@$(CXX) $^ $(LDFLAGS) -o $@
 $(OBJ_DIR)/%.o:$(SRC_DIR)/%.cpp
 	@-[ -d $(OBJ_DIR) ] || mkdir -p $(OBJ_DIR)
 	@echo "Compiling: $< -> $@"
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $< -o $@
+	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) $< -o $@
+# $(GOOGLEAPIS_ASSISTANT_OBJS):$(GOOGLEAPIS_ASSISTANT_SRCS)
+# 	@echo "Compiling: $< -> $@"
+# 	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) $< -o $@
 
 .PHONY:clean
 clean:
-	rm -rf $(OBJ_DIR) $(OUT_DIR)
+	rm -rf $(OBJ_DIR) $(OUT_DIR) $(GOOGLEAPIS_ASSISTANT_OBJS)
 .PHONY:dclean
 dclean:
-	rm -rf $(OBJ_DIR) $(OUT_DIR)
+	rm -rf $(OBJ_DIR) $(OUT_DIR) $(GOOGLEAPIS_ASSISTANT_OBJS)
 	rm -f $(GOOGLEAPIS_OBJS)
 	rm -f googleapis.ar
 .PHONY:debug
 debug:
-	@make DEBUG=1
+	@$(MAKE) DEBUG=1
 .PHONY:test
 test:
 	@echo "CXX:"
@@ -83,6 +91,9 @@ test:
 	@echo $(TARGET)
 	@echo "GOOGLEAPIS_ASSISTANT_OBJS:"
 	@echo $(GOOGLEAPIS_ASSISTANT_OBJS)
+	@echo "GOOGLEAPIS_API_SRCS:"
+	@echo $(GOOGLEAPIS_API_SRCS)
 
 googleapis.ar: $(GOOGLEAPIS_OBJS)
-	$(AR) r $@ $?
+	@echo "Packaging: $< -> $@"
+	@$(AR) r $@ $?

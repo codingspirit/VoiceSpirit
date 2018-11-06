@@ -4,6 +4,7 @@
 
 #include "AudioInputStream.h"
 #include "BasicLogger.h"
+#include "GoogleVoiceAssistant.h"
 #include "Recorder.h"
 #include "SnowBoyKeyWordDetector.h"
 
@@ -35,8 +36,23 @@ int main(int argc, char const* argv[]) {
     // tConfig.sensitivity = "0.5";
     // config.push_back(tConfig);
 
-    auto snowBoy = std::make_unique<KeyWord::SnowBoyKeyWordDetector>(
-        reader, config, "../resources/common.res", 1.0, true);
+    // auto snowBoy = std::make_unique<KeyWord::SnowBoyKeyWordDetector>(
+    //     reader, config, "../resources/common.res", 1.0, true);
+
+    VoiceAssistant::GoogleVoiceAssistant::GoogleVoiceAssistantConfig gvaConfig;
+    gvaConfig.api_endpoint = "embeddedassistant.googleapis.com";
+    gvaConfig.credentials_file_path = "../resources/credentials.json";
+    gvaConfig.language_code = "en-US";
+    gvaConfig.device_id = "default";
+    gvaConfig.device_model_id = "default";
+    gvaConfig.output_sample_rate_hertz = 16000;
+    gvaConfig.output_encoding =
+        AudioOutConfig_Encoding::AudioOutConfig_Encoding_LINEAR16;
+
+    auto gva = std::make_shared<VoiceAssistant::GoogleVoiceAssistant>(
+        std::move(gvaConfig));
+
+    // snowBoy->addKeyWordObserver(gva);
 
     while (1) {
         usleep(100000);
