@@ -36,8 +36,8 @@ int main(int argc, char const* argv[]) {
     // tConfig.sensitivity = "0.5";
     // config.push_back(tConfig);
 
-    // auto snowBoy = std::make_unique<KeyWord::SnowBoyKeyWordDetector>(
-    //     reader, config, "../resources/common.res", 1.0, true);
+    auto snowBoy = std::make_unique<KeyWord::SnowBoyKeyWordDetector>(
+        reader, config, "../resources/common.res", 1.0, true);
 
     VoiceAssistant::GoogleVoiceAssistant::GoogleVoiceAssistantConfig gvaConfig;
     gvaConfig.api_endpoint = "embeddedassistant.googleapis.com";
@@ -52,7 +52,7 @@ int main(int argc, char const* argv[]) {
     auto gva = std::make_shared<VoiceAssistant::GoogleVoiceAssistant>(
         std::move(gvaConfig));
 
-    // snowBoy->addKeyWordObserver(gva);
+    snowBoy->addKeyWordObserver(gva);
 
     while (1) {
         usleep(100000);
