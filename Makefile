@@ -36,7 +36,7 @@ INC_DIR:= \
 OBJECTS:=$(addprefix $(OBJ_DIR)/,$(patsubst %.cpp,%.o,$(notdir $(SOURCES))))
 
 ifeq ($(DEBUG), 1)#debug version, DEBUG:=1
-CXXFLAGS:=-c -O1 -g -std=c++14
+CXXFLAGS:=-c -g -std=c++14
 TARGET:=$(addprefix $(TARGET),_debug)
 else#release version
 CXXFLAGS:=-c -O1 -std=c++14

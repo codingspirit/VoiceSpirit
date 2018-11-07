@@ -87,8 +87,7 @@ std::shared_ptr<grpc::Channel> GoogleVoiceAssistant::createChannel(
     auto credentials = grpc::SslCredentials(ssl_opts);
     std::string server = host + ":443";
     BasicLogger::getInstance().log(
-        TAG, LogLevel::INFO, "gPRC: Creating a channel connect to:\n" +
-        server);
+        TAG, LogLevel::INFO, "gPRC: Creating a channel connect to:\n" + server);
     grpc::ChannelArguments channel_args;
     return CreateCustomChannel(server, credentials, channel_args);
 }
@@ -115,7 +114,15 @@ void GoogleVoiceAssistant::threadLoop() {
             case GVAState::LISTENING:
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: LISTENING");
-                m_clientRW->Write(createRequest("who are you"));
+
+                try {
+                    m_clientRW->Write(createRequest("who are you"));
+                } catch (BaseException& e) {
+                    BasicLogger::getInstance().log(
+                        TAG, LogLevel::ERROR,
+                        std::string("Write request error:") + e.what());
+                }
+
                 m_state = GVAState::THINKING;
                 break;
             case GVAState::THINKING:
