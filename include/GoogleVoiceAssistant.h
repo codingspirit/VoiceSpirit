@@ -90,7 +90,7 @@ class GoogleVoiceAssistant : public KeyWord::KeyWordObserverInterface {
      */
     void setState(GVAState&& newState);
 
-    AssistRequest&& createRequest(const std::string& textRequest);
+    AssistRequest createRequest(const std::string& textRequest);
 
     std::shared_ptr<Audio::AudioInputStream::Reader> m_reader;
 

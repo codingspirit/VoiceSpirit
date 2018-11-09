@@ -39,7 +39,7 @@ ifeq ($(DEBUG), 1)#debug version, DEBUG:=1
 CXXFLAGS:=-c -g -std=c++14
 TARGET:=$(addprefix $(TARGET),_debug)
 else#release version
-CXXFLAGS:=-c -O1 -std=c++14
+CXXFLAGS:=-c -O2 -std=c++14
 endif
 
 CXXFLAGS += $(GRPC_GRPCPP_CFLAGS)
@@ -48,12 +48,13 @@ CPPFLAGS:=$(INC_DIR)
 #LDFLAGS:= $(GRPC_GRPCPP_LDLAGS)
 
 LDFLAGS:= \
-	-L./thirdparty/library/shared_lib \
-	-lgrpc++ -lgrpc -lgrpc++_reflection -lgrpc_cronet -lgpr -lprotobuf -ldl\
+	-L./thirdparty/library/static_lib \
+	-lgrpc++ -lgrpc -lgrpc++_reflection -lgrpc_cronet -lgpr -lprotobuf -ldl -lares\
 	-L./thirdparty/library \
 	-lsnowboy-detect -lportaudio -lasound \
 	-L./thirdparty/library/atlas \
 	-lblas \
+	-lz \
 	-pthread
 
 $(OUT_DIR)/$(TARGET):$(OBJECTS) $(GOOGLEAPIS_ASSISTANT_OBJS) googleapis.ar
