@@ -83,6 +83,13 @@ class GoogleVoiceAssistant : public KeyWord::KeyWordObserverInterface {
      */
     void threadLoop();
     /**
+     * @brief refreshClient. Call it before new request
+     *
+     * @return true refresh succeed
+     * @return false refresh failed
+     */
+    bool refreshClient();
+    /**
      * @brief Set the @c m_state. This method will lock @c m_stateMtx so it's
      * thread safe
      *
@@ -103,7 +110,7 @@ class GoogleVoiceAssistant : public KeyWord::KeyWordObserverInterface {
     std::shared_ptr<grpc::CallCredentials> m_callCredentials;
     std::unique_ptr<EmbeddedAssistant::Stub> m_assistantStub;
     std::shared_ptr<grpc::Channel> m_channel;
-    grpc::ClientContext m_clientContext;
+    std::unique_ptr<grpc::ClientContext> m_clientContext;
     std::unique_ptr<grpc::ClientReaderWriter<AssistRequest, AssistResponse>>
         m_clientRW;
 };

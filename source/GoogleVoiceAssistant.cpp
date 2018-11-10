@@ -52,15 +52,8 @@ void GoogleVoiceAssistant::init() {
         throw BaseException(errorMsg);
     }
 
-    // prepare clientcontext
-    m_clientContext.set_wait_for_ready(true);
-    m_clientContext.set_credentials(m_callCredentials);
-
-    // create connection
+    // create channel
     m_channel = createChannel(m_gvaConfig.api_endpoint);
-    m_assistantStub = EmbeddedAssistant::NewStub(m_channel);
-
-    m_clientRW = m_assistantStub->Assist(&m_clientContext);
 
     BasicLogger::getInstance().log(TAG, LogLevel::INFO, "Connected!");
 
@@ -113,6 +106,7 @@ void GoogleVoiceAssistant::threadLoop() {
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: KEYWORD_TRIGGERED");
                 m_state = GVAState::LISTENING;
+                refreshClient();
                 break;
             case GVAState::LISTENING:
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
@@ -121,6 +115,7 @@ void GoogleVoiceAssistant::threadLoop() {
                 if (!m_clientRW->Write(
                         createRequest(requestList[requestIndex]))) {
                     m_state = GVAState::IDLE;
+                    m_clientRW->Finish();
                     BasicLogger::getInstance().log(
                         TAG, LogLevel::INFO,
                         "GVA write request error, go back to IDLE");
@@ -135,6 +130,7 @@ void GoogleVoiceAssistant::threadLoop() {
                                                "GVA State: THINKING");
                 if (!m_clientRW->Read(&response)) {
                     m_state = GVAState::IDLE;
+                    m_clientRW->Finish();
                 } else {
                     m_state = GVAState::RESPONDING;
                 }
@@ -163,6 +159,7 @@ void GoogleVoiceAssistant::threadLoop() {
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: IDLE");
                 m_state = GVAState::IDLE;
+                m_clientRW->Finish();
                 break;
             default:
                 BasicLogger::getInstance().log(TAG, LogLevel::ERROR,
@@ -170,6 +167,15 @@ void GoogleVoiceAssistant::threadLoop() {
         }
     }
     BasicLogger::getInstance().log(TAG, LogLevel::DEBUG, "*** THREAD END ***");
+}
+
+bool GoogleVoiceAssistant::refreshClient() {
+    // prepare clientcontext
+    m_clientContext = std::make_unique<grpc::ClientContext>();
+    m_clientContext->set_wait_for_ready(true);
+    m_clientContext->set_credentials(m_callCredentials);
+    m_assistantStub = EmbeddedAssistant::NewStub(m_channel);
+    m_clientRW = m_assistantStub->Assist(m_clientContext.get());
 }
 
 void GoogleVoiceAssistant::setState(GVAState&& newState) {
