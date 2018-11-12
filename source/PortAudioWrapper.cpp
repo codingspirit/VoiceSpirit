@@ -9,81 +9,20 @@
 #include <memory>
 
 using namespace Utils::Logger;
-using namespace BaseClass;
+using BaseClass::BaseException;
 
 namespace Audio {
 namespace PortAudio {
 
 static const std::string TAG = "PortAudioWrapper";
 
-PortAudioWrapper::PortAudioWrapper(
-    int sampleRate,
-    int numChannels,
-    int bitsPerSample,
-    IOType type,
-    std::function<void(const void*, unsigned long)> callbackInterface)
+PortAudioWrapper::PortAudioWrapper()
     : m_paInputStream{nullptr},
-      m_numLostSamples{0},
-      m_callbackInterface{callbackInterface} {
-    init(bitsPerSample, numChannels, sampleRate, type);
-}
-
-PortAudioWrapper::~PortAudioWrapper() {
-    Pa_StopStream(m_paInputStream);
-    Pa_CloseStream(m_paInputStream);
-    Pa_Terminate();
-}
-
-/*
- * This method is deprecated. Right now data should be written into/read from
- * SharedDataStream by Writer/Reader instead of ringbuf provided by portaudio
- */
-
-// [[deprecated]] void PortAudioWrapper::readData(
-//     std::vector<int16_t>* paSamples) {
-//     if (m_numLostSamples > 0) {
-//         BasicLogger::getInstance().log(
-//             TAG, LogLevel::INFO,
-//             "RingBuffer overflow, number of lost samples:" +
-//                 std::to_string(m_numLostSamples));
-//         m_numLostSamples = 0;
-//     }
-//     auto numAvailableSamples =
-//         PaUtil_GetRingBufferReadAvailable(&m_paRingBuffer);
-
-//     // There may be no work to do
-//     if (0 == numAvailableSamples) {
-//         return;
-//     }
-
-//     // Get the data out the ringbuffer and into the vector
-//     paSamples->resize(numAvailableSamples);
-//     auto numReadSamples = PaUtil_ReadRingBuffer(
-//         &m_paRingBuffer, paSamples->data(), numAvailableSamples);
-
-//     // Confirm we read the amount of data we expected
-//     if (numReadSamples != numAvailableSamples) {
-//         BasicLogger::getInstance().log(
-//             TAG, LogLevel::ERROR,
-//             std::string("Error reading from PortAudio") +
-//                 " | available samples:" + std::to_string(numAvailableSamples)
-//                 + " | read samples:" + std::to_string(numReadSamples));
-//     }
-// }
-
-void PortAudioWrapper::init(int bitsPerSample,
-                            int numChannels,
-                            int sampleRate,
-                            IOType type) {
-    BasicLogger::getInstance().log(
-        TAG, LogLevel::DEBUG,
-        std::string("Creating PortAudio library") + " | sample rate " +
-            std::to_string(sampleRate) + " | sample size " +
-            std::to_string(bitsPerSample) + " | number of channels " +
-            std::to_string(numChannels) + " | IOType " +
-            std::to_string(
-                static_cast<std::underlying_type<IOType>::type>(type)));
-
+      m_paOutputStream{nullptr},
+      m_inputCallbackInterface{nullptr},
+      m_outputCallbackInterface{nullptr} {
+    BasicLogger::getInstance().log(TAG, LogLevel::INFO,
+                                   "Initializing PortAudio library");
     PaError paStatus = Pa_Initialize();
     if (paStatus != paNoError) {
         std::string errorMsg = std::string("Failed to initialize PortAudio. ") +
@@ -92,49 +31,70 @@ void PortAudioWrapper::init(int bitsPerSample,
 
         throw BaseException(errorMsg);
     }
+}
 
-    // Ok, open the stream
-    PaStreamParameters inputParameters;
-    PaStreamParameters outputParameters;
-    std::memset(&inputParameters, 0, sizeof(inputParameters));
-    std::memset(&outputParameters, 0, sizeof(outputParameters));
+PortAudioWrapper::~PortAudioWrapper() {
+    Pa_StopStream(m_paInputStream);
+    Pa_CloseStream(m_paInputStream);
+    Pa_Terminate();
+}
 
-    switch (type) {
+void PortAudioWrapper::addStream(const PortAudioWrapperConfig& config) {
+    BasicLogger::getInstance().log(
+        TAG, LogLevel::DEBUG,
+        std::string("Adding PortAudio library stream") + " | IOType " +
+            std::to_string(
+                static_cast<std::underlying_type<IOType>::type>(config.type)) +
+            " | sample rate " + std::to_string(config.sampleRate) +
+            " | sample size " + std::to_string(config.bitsPerSample) +
+            " | number of channels " + std::to_string(config.numChannels));
+
+    std::lock_guard<std::mutex> lock(m_portAudioMtx);
+    // Prepare stream parameters
+    PaStreamParameters streamParameters;
+    std::memset(&streamParameters, 0, sizeof(streamParameters));
+
+    PaError paStatus;
+
+    switch (config.type) {
         case IOType::INPUT:
-            inputParameters.device = Pa_GetDefaultInputDevice();
-            inputParameters.channelCount = numChannels;
-            inputParameters.sampleFormat = paInt16;
-            inputParameters.suggestedLatency =
-                Pa_GetDeviceInfo(inputParameters.device)
+            streamParameters.device = Pa_GetDefaultInputDevice();
+            streamParameters.channelCount = config.numChannels;
+            streamParameters.sampleFormat = paInt16;
+            streamParameters.suggestedLatency =
+                Pa_GetDeviceInfo(streamParameters.device)
                     ->defaultLowInputLatency;
-            inputParameters.hostApiSpecificStreamInfo = nullptr;
-
+            streamParameters.hostApiSpecificStreamInfo = nullptr;
+            m_inputCallbackInterface = config.inputCallbackInterface;
             break;
         case IOType::OUTPUT:
-            outputParameters.device = Pa_GetDefaultOutputDevice();
-            outputParameters.channelCount = numChannels;
-            outputParameters.sampleFormat = paInt16;
-            outputParameters.suggestedLatency =
-                Pa_GetDeviceInfo(outputParameters.device)
+            streamParameters.device = Pa_GetDefaultOutputDevice();
+            streamParameters.channelCount = config.numChannels;
+            streamParameters.sampleFormat = paInt16;
+            streamParameters.suggestedLatency =
+                Pa_GetDeviceInfo(streamParameters.device)
                     ->defaultLowOutputLatency;
-            outputParameters.hostApiSpecificStreamInfo = nullptr;
+            streamParameters.hostApiSpecificStreamInfo = nullptr;
+            m_outputCallbackInterface = config.outputCallbackInterface;
             break;
         default:
-            std::string errorMsg =
-                "Failed to initialize PortAudio. Invalid IOType";
+            std::string errorMsg = "Failed to add stream. Invalid IOType";
             BasicLogger::getInstance().log(TAG, LogLevel::ERROR, errorMsg);
 
             throw BaseException(errorMsg);
     }
 
-    // TODO: Add support for output
-    paStatus = Pa_OpenStream(&m_paInputStream, &inputParameters, nullptr,
-                             sampleRate, paFramesPerBufferUnspecified, paNoFlag,
-                             portAudioCallback, this);
-    // paStatus =
-    //     Pa_OpenStream(&m_paOutputStream, &outputParameters, nullptr,
-    //     sampleRate,
-    //                   paFramesPerBufferUnspecified, paNoFlag, nullptr, this);
+    // Ok, open stream
+    if (IOType::INPUT == config.type) {
+        paStatus =
+            Pa_OpenStream(&(m_paInputStream), &streamParameters, nullptr,
+                          config.sampleRate, paFramesPerBufferUnspecified,
+                          paNoFlag, portAudioInputCallback, this);
+    } else if (IOType::OUTPUT == config.type) {
+        paStatus = Pa_OpenStream(&(m_paOutputStream), nullptr,
+                                 &streamParameters, config.sampleRate, 4096,
+                                 paNoFlag, portAudioOutputCallback, this);
+    }
 
     if (paStatus != paNoError) {
         std::string errorMsg = "Failed to open PortAudio stream.";
@@ -144,22 +104,53 @@ void PortAudioWrapper::init(int bitsPerSample,
         throw BaseException(errorMsg);
     }
 }
-void PortAudioWrapper::startStream() {
-    std::lock_guard<std::mutex> lock(m_portAudioMtx);
-    PaError paStatus = Pa_StartStream(m_paInputStream);
-    // Pa_StartStream(m_paOutputStream);
 
+void PortAudioWrapper::startStream(const IOType& type) {
+    std::lock_guard<std::mutex> lock(m_portAudioMtx);
+    PaError paStatus;
+
+    switch (type) {
+        case IOType::INPUT:
+            paStatus = Pa_StartStream(m_paInputStream);
+            break;
+        case IOType::OUTPUT:
+            paStatus = Pa_StartStream(m_paOutputStream);
+            break;
+
+        default:
+            std::string errorMsg = "Failed to start stream. Invalid IOType";
+            BasicLogger::getInstance().log(TAG, LogLevel::ERROR, errorMsg);
+
+            throw BaseException(errorMsg);
+            break;
+    }
     if (paStatus != paNoError) {
         std::string errorMsg =
-            std::string("Failed to start PortAudio stream.") +
-            Pa_GetErrorText(paStatus);
+            std::string("Failed to start stream.") + Pa_GetErrorText(paStatus);
         BasicLogger::getInstance().log(TAG, LogLevel::ERROR, errorMsg);
         throw BaseException(errorMsg);
     }
 }
-void PortAudioWrapper::stopStream() {
+
+void PortAudioWrapper::stopStream(const IOType& type) {
     std::lock_guard<std::mutex> lock(m_portAudioMtx);
-    PaError paStatus = Pa_StopStream(m_paInputStream);
+    PaError paStatus;
+
+    switch (type) {
+        case IOType::INPUT:
+            paStatus = Pa_StopStream(m_paInputStream);
+            break;
+        case IOType::OUTPUT:
+            paStatus = Pa_StopStream(m_paOutputStream);
+            break;
+
+        default:
+            std::string errorMsg = "Failed to stop stream. Invalid IOType";
+            BasicLogger::getInstance().log(TAG, LogLevel::ERROR, errorMsg);
+
+            throw BaseException(errorMsg);
+            break;
+    }
     if (paStatus != paNoError) {
         std::string errorMsg = std::string("Failed to stop PortAudio stream.") +
                                Pa_GetErrorText(paStatus);
@@ -167,10 +158,8 @@ void PortAudioWrapper::stopStream() {
         throw BaseException(errorMsg);
     }
 }
-/**
- * PortAudio will call this function once sampling is done
- */
-int PortAudioWrapper::portAudioCallback(
+
+int PortAudioWrapper::portAudioInputCallback(
     const void* inputBuffer,
     void* outputBuffer,
     unsigned long numSamples,
@@ -178,8 +167,24 @@ int PortAudioWrapper::portAudioCallback(
     PaStreamCallbackFlags statusFlags,
     void* userData) {
     auto paWrapper = static_cast<PortAudioWrapper*>(userData);
-    if (paWrapper->m_callbackInterface != nullptr) {
-        paWrapper->m_callbackInterface(inputBuffer, numSamples);
+
+    if (paWrapper->m_inputCallbackInterface != nullptr) {
+        paWrapper->m_inputCallbackInterface(inputBuffer, numSamples);
+    }
+    return paContinue;
+}
+
+int PortAudioWrapper::portAudioOutputCallback(
+    const void* inputBuffer,
+    void* outputBuffer,
+    unsigned long numSamples,
+    const PaStreamCallbackTimeInfo* timeInfo,
+    PaStreamCallbackFlags statusFlags,
+    void* userData) {
+    auto paWrapper = static_cast<PortAudioWrapper*>(userData);
+
+    if (paWrapper->m_outputCallbackInterface != nullptr) {
+        paWrapper->m_outputCallbackInterface(outputBuffer, numSamples);
     }
     return paContinue;
 }

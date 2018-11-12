@@ -4,7 +4,7 @@
 
 #include <unistd.h>
 
-using namespace BaseClass;
+using BaseClass::BaseException;
 
 namespace KeyWord {
 /// SnowBoy returns -1 if an error occurred.
@@ -65,7 +65,7 @@ void SnowBoyKeyWordDetector::detectionThreadLoop() {
                                    "*** THREAD START ***");
     notifykeyWordObservers(
         KeyWordObserverInterface::KeyWordDetectorState::ACTIVE);
-    std::vector<int16_t> audioData;
+    std::vector<Audio::AudioInputStreamSize> audioData;
     while (m_isRunning) {
         audioData.resize(m_reader->getAvailableNum());
         size_t nRead = m_reader->read(audioData.data(), audioData.size());

@@ -1,10 +1,7 @@
 #pragma once
 
-#include "AudioInputStream.h"
+#include "AudioStream.h"
 #include "PortAudioWrapper.h"
-
-using namespace Utils::Logger;
-using namespace Utils::DataStructures;
 
 namespace Audio {
 
@@ -14,10 +11,12 @@ class Recorder {
     Recorder(const int sampleRate,
              const int bitsPerSample,
              const int numChannels,
-             std::unique_ptr<AudioInputStream::Writer> writer);
+             std::unique_ptr<AudioInputStream::Writer> writer,
+             std::shared_ptr<PortAudio::PortAudioWrapper> portAudioWrapper);
     ~Recorder();
     void startRecord();
     void stopRecord();
+    bool isRecording() const;
 
     const int m_sampleRate;
     const int m_bitsPerSample;
@@ -28,11 +27,10 @@ class Recorder {
     Recorder(const Recorder&) = delete;
     Recorder& operator=(const Recorder&) = delete;
 
-    void initPortAudio();
-
-    std::unique_ptr<PortAudio::PortAudioWrapper> m_portAudioWrapper;
+    std::shared_ptr<PortAudio::PortAudioWrapper> m_portAudioWrapper;
     std::unique_ptr<AudioInputStream::Writer> m_writer;
-    std::atomic<bool> m_isPortAudioSetup;
+    std::atomic<bool> m_isReady;
+    std::atomic<bool> m_isRecording;
 };
 }  // namespace Recorder
 }  // namespace Audio

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AudioInputStream.h"
+#include "AudioStream.h"
 #include "KeyWordDetector.h"
 #include "PortAudioWrapper.h"
 #include "SnowBoyWrapper.h"

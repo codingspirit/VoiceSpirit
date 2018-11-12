@@ -29,6 +29,10 @@ class SharedDataStream<T>::Writer {
      * return 0
      */
     void close();
+    /**
+     * @brief Open writer.
+     *
+     */
     void open();
 
   private:

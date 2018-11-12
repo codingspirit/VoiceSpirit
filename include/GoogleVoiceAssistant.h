@@ -13,7 +13,7 @@
 #include <condition_variable>
 #include <thread>
 
-#include "AudioInputStream.h"
+#include "AudioStream.h"
 #include "KeyWordObserverInterface.h"
 
 #include <grpc++/grpc++.h>
