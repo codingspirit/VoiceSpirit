@@ -13,18 +13,19 @@ using namespace Utils::Logger;
 
 int main(int argc, char const* argv[]) {
     auto inputStream = std::make_unique<Audio::AudioInputStream>(16384);
-    auto ouputStream = std::make_unique<Audio::AudioInputStream>(16384);
+    auto ouputStream = std::make_unique<Audio::AudioOutputStream>(16384);
 
     auto portAudioWrapper =
         std::make_shared<Audio::PortAudio::PortAudioWrapper>();
 
     auto snowBoyReader = inputStream->createReader();
-    auto playerReader = inputStream->createReader();
 
     auto recorder = std::make_unique<Audio::Recorder::Recorder>(
         16000, 16, 1, inputStream->createWriter(), portAudioWrapper);
 
     recorder->startRecord();
+
+    auto playerReader = inputStream->createReader();
 
     auto player = std::make_unique<Audio::Player::Player>(
         16000, 16, 1, playerReader, portAudioWrapper);

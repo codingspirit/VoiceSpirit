@@ -42,7 +42,8 @@ Player::Player(const int sampleRate,
                 BasicLogger::getInstance().log(
                     TAG, LogLevel::WARNING, "reader read nothing from stream");
             } else {
-                memcpy(data, audioData.data(), audioData.size());
+                std::memcpy(data, audioData.data(),
+                            audioData.size() * sizeof(AudioOutputStreamSize));
             }
         };
         portAudioWrapper->addStream(config);
