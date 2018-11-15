@@ -15,6 +15,8 @@ class SharedDataStream<T>::Reader {
     size_t read(T* buf, size_t nRead);
     void updateIndex(size_t nDeleted);
     size_t getAvailableNum();
+    size_t getIndex() const;
+    void setIndex(size_t index);
 
   private:
     SharedDataStream<T>& m_sharedDataStream;
@@ -73,6 +75,16 @@ void SharedDataStream<T>::Reader::updateIndex(size_t nDeleted) {
 template <typename T>
 size_t SharedDataStream<T>::Reader::getAvailableNum() {
     return (m_sharedDataStream.m_circularBuffer->size() - m_index);
+}
+
+template <typename T>
+size_t SharedDataStream<T>::Reader::getIndex() const {
+    return m_index;
+}
+
+template <typename T>
+void SharedDataStream<T>::Reader::setIndex(size_t index) {
+    m_index = index;
 }
 
 }  // namespace DataStructures

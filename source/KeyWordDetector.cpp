@@ -19,10 +19,11 @@ void KeyWordDetector::removeKeyWordObserver(
     m_keyWordObservers.erase(keyWordObserver);
 }
 
-void KeyWordDetector::notifykeyWordObservers(std::string keyWord) const {
+void KeyWordDetector::notifykeyWordObservers(std::string keyWord,
+                                             size_t readerIndex) const {
     std::lock_guard<std::mutex> lock(m_keyWordObserversMtx);
     for (auto keyWordObserver : m_keyWordObservers) {
-        keyWordObserver->onKeyWordDetected(keyWord);
+        keyWordObserver->onKeyWordDetected(keyWord, readerIndex);
     }
 }
 void KeyWordDetector::notifykeyWordObservers(

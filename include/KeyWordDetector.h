@@ -20,15 +20,13 @@ class KeyWordDetector {
 
   protected:
     KeyWordDetector();
-    void notifykeyWordObservers(std::string keyWord) const;
+    void notifykeyWordObservers(std::string keyWord, size_t readerIndex) const;
     void notifykeyWordObservers(
         KeyWordObserverInterface::KeyWordDetectorState state) const;
-    ssize_t readFromStream();
 
   private:
     std::unordered_set<std::shared_ptr<KeyWordObserverInterface>>
         m_keyWordObservers;
     mutable std::mutex m_keyWordObserversMtx;
-    KeyWordObserverInterface::KeyWordDetectorState m_detectorState;
 };
 }  // namespace KeyWord

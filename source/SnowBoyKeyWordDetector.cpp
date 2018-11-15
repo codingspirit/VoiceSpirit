@@ -8,7 +8,7 @@ using BaseClass::BaseException;
 
 namespace KeyWord {
 /// SnowBoy returns -1 if an error occurred.
-static const int SNOWBOY_ERROR_DETECTION_RESULT = -1;
+static constexpr int SNOWBOY_ERROR_DETECTION_RESULT = -1;
 
 static const int MICROSECONDS_BETWEEN_SAMPLES = 100000;
 
@@ -81,7 +81,8 @@ void SnowBoyKeyWordDetector::detectionThreadLoop() {
                     TAG, LogLevel::DEBUG,
                     std::string("KeyWord detected:") +
                         m_keyWords[detectRet - 1]);
-                notifykeyWordObservers(m_keyWords[detectRet - 1]);
+                notifykeyWordObservers(m_keyWords[detectRet - 1],
+                                       m_reader->getIndex());
             } else if (detectRet == SNOWBOY_ERROR_DETECTION_RESULT /*-1*/) {
                 // error
                 notifykeyWordObservers(

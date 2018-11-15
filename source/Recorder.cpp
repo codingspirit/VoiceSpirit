@@ -31,8 +31,8 @@ Recorder::Recorder(
         config.inputCallbackInterface = [this](const void* data,
                                                unsigned long size) {
             // Called by portaudio callback
-            size_t writtenNum =
-                m_writer->write(static_cast<const int16_t*>(data), size);
+            size_t writtenNum = m_writer->write(
+                static_cast<const AudioInputStreamSize*>(data), size);
 
             if (writtenNum == 0) {
                 BasicLogger::getInstance().log(TAG, LogLevel::WARNING,

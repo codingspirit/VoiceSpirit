@@ -10,7 +10,7 @@ class KeyWordObserverInterface {
         STOP     // KeyWordDetector is stopped
     };
     virtual ~KeyWordObserverInterface() = default;
-    virtual void onKeyWordDetected(std::string keyWord) = 0;
+    virtual void onKeyWordDetected(std::string keyWord, size_t readerIndex) = 0;
     virtual void onStateChanged(KeyWordDetectorState state) = 0;
 };
 }  // namespace KeyWord
