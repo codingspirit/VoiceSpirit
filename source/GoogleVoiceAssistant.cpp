@@ -16,12 +16,19 @@ using google::assistant::embedded::v1alpha2::ScreenOutConfig;
 using grpc::CallCredentials;
 using grpc::Channel;
 
-namespace VoiceAssistant {
+namespace VoiceAssistantService {
 
 static const std::string TAG = "GoogleVoiceAssistant";
 
-GoogleVoiceAssistant::GoogleVoiceAssistant(GoogleVoiceAssistantConfig&& config)
-    : m_gvaConfig{config}, m_isRunning{false}, m_state{GVAState::NOT_READY} {
+GoogleVoiceAssistant::GoogleVoiceAssistant(
+    GoogleVoiceAssistantConfig&& config,
+    std::unique_ptr<Audio::AudioOutputStream::Writer> writer,
+    std::shared_ptr<Audio::AudioInputStream::Reader> reader)
+    : m_gvaConfig{config},
+      m_writer{std::move(writer)},
+      m_reader{reader},
+      m_isRunning{false},
+      m_state{VoiceAssistantObserverInterface::VoiceAssistantState::NOT_READY} {
     init();
 }
 
@@ -92,53 +99,76 @@ void GoogleVoiceAssistant::threadLoop() {
                                    "*** THREAD START ***");
     std::unique_lock<std::mutex> locker(m_stateMtx);
     AssistResponse response;
-    std::string requestList[2] = {"what time is it", "who are you"};
+    std::string requestList[3] = {"what time is it", "who are you",
+                                  "how is weather today"};
     int requestIndex = 0;
 
     while (m_isRunning) {
         m_cvStateChange.wait(locker, [this] {
-            return (m_state != GVAState::IDLE) &&
-                   (m_state != GVAState::NOT_READY);
+            return (m_state != VoiceAssistantObserverInterface::
+                                   VoiceAssistantState::IDLE) &&
+                   (m_state != VoiceAssistantObserverInterface::
+                                   VoiceAssistantState::NOT_READY);
         });
         // m_stateMtx is locked
         switch (m_state) {
-            case GVAState::KEYWORD_TRIGGERED:
+            case VoiceAssistantObserverInterface::VoiceAssistantState::
+                KEYWORD_TRIGGERED:
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: KEYWORD_TRIGGERED");
-                m_state = GVAState::LISTENING;
+                m_state = VoiceAssistantObserverInterface::VoiceAssistantState::
+                    LISTENING;
                 refreshClient();
                 break;
-            case GVAState::LISTENING:
+            case VoiceAssistantObserverInterface::VoiceAssistantState::
+                LISTENING:
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: LISTENING");
 
                 if (!m_clientRW->Write(
                         createRequest(requestList[requestIndex]))) {
-                    m_state = GVAState::IDLE;
+                    m_state = VoiceAssistantObserverInterface::
+                        VoiceAssistantState::IDLE;
                     m_clientRW->Finish();
                     BasicLogger::getInstance().log(
                         TAG, LogLevel::INFO,
                         "GVA write request error, go back to IDLE");
                 } else {
-                    m_state = GVAState::THINKING;
-                    requestIndex = requestIndex >= 1 ? 0 : requestIndex + 1;
+                    BasicLogger::getInstance().log(
+                        TAG, LogLevel::INFO,
+                        "GVA received request : " + requestList[requestIndex]);
+                    m_state = VoiceAssistantObserverInterface::
+                        VoiceAssistantState::THINKING;
+                    requestIndex = requestIndex >= 2 ? 0 : requestIndex + 1;
                 }
 
                 break;
-            case GVAState::THINKING:
+            case VoiceAssistantObserverInterface::VoiceAssistantState::THINKING:
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: THINKING");
                 if (!m_clientRW->Read(&response)) {
-                    m_state = GVAState::IDLE;
+                    m_state = VoiceAssistantObserverInterface::
+                        VoiceAssistantState::IDLE;
                     m_clientRW->Finish();
                 } else {
-                    m_state = GVAState::RESPONDING;
+                    m_state = VoiceAssistantObserverInterface::
+                        VoiceAssistantState::RESPONDING;
                 }
                 break;
-            case GVAState::RESPONDING:
+            case VoiceAssistantObserverInterface::VoiceAssistantState::
+                RESPONDING:
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: RESPONDING");
                 do {
+                    if (response.has_audio_out()) {
+                        std::vector<Audio::AudioOutputStreamSize> data;
+                        data.resize(response.audio_out().audio_data().size() /
+                                    2);
+                        std::memcpy(&data[0],
+                                    response.audio_out().audio_data().c_str(),
+                                    response.audio_out().audio_data().length());
+                        m_writer->write(&data[0], data.size());
+                    }
                     for (int i = 0; i < response.speech_results_size(); i++) {
                         auto result = response.speech_results(i);
                         BasicLogger::getInstance().log(
@@ -158,7 +188,8 @@ void GoogleVoiceAssistant::threadLoop() {
                 } while (m_clientRW->Read(&response));
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: IDLE");
-                m_state = GVAState::IDLE;
+                m_state =
+                    VoiceAssistantObserverInterface::VoiceAssistantState::IDLE;
                 m_clientRW->Finish();
                 break;
             default:
@@ -178,16 +209,20 @@ bool GoogleVoiceAssistant::refreshClient() {
     m_clientRW = m_assistantStub->Assist(m_clientContext.get());
 }
 
-void GoogleVoiceAssistant::setState(GVAState&& newState) {
+void GoogleVoiceAssistant::setState(
+    VoiceAssistantObserverInterface::VoiceAssistantState&& newState) {
     std::lock_guard<std::mutex> lock(m_stateMtx);
     m_state = newState;
 }
 
-void GoogleVoiceAssistant::onKeyWordDetected(std::string keyWord) {
+void GoogleVoiceAssistant::onKeyWordDetected(std::string keyWord,
+                                             size_t readerIndex) {
     if (keyWord == "jarvis") {
         BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                        "GVA is activied by KeyWord " + keyWord);
-        setState(GVAState::KEYWORD_TRIGGERED);
+        setState(VoiceAssistantObserverInterface::VoiceAssistantState::
+                     KEYWORD_TRIGGERED);
+        m_reader->setIndex(readerIndex);
         // unblock m_thread
         m_cvStateChange.notify_one();
     }
@@ -220,4 +255,32 @@ AssistRequest GoogleVoiceAssistant::createRequest(
     return request;
 }
 
-}  // namespace VoiceAssistant
+AssistRequest GoogleVoiceAssistant::createRequest(
+    const Audio::AudioInputStreamSize*) {
+    AssistRequest request;
+
+    auto* assist_config = request.mutable_config();
+    assist_config->mutable_dialog_state_in()->set_language_code(
+        m_gvaConfig.language_code);
+
+    assist_config->mutable_device_config()->set_device_id(
+        m_gvaConfig.device_id);
+    assist_config->mutable_device_config()->set_device_model_id(
+        m_gvaConfig.device_model_id);
+
+    assist_config->mutable_audio_out_config()->set_encoding(
+        m_gvaConfig.output_encoding);
+    assist_config->mutable_audio_out_config()->set_sample_rate_hertz(
+        m_gvaConfig.output_sample_rate_hertz);
+    assist_config->mutable_audio_in_config()->set_encoding(
+        m_gvaConfig.input_encoding);
+    assist_config->mutable_audio_in_config()->set_sample_rate_hertz(
+        m_gvaConfig.input_sample_rate_hertz);
+
+    assist_config->mutable_screen_out_config()->set_screen_mode(
+        ScreenOutConfig::SCREEN_MODE_UNSPECIFIED);
+
+    return request;
+}
+
+}  // namespace VoiceAssistantService

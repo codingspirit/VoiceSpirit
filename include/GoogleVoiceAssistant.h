@@ -15,6 +15,7 @@
 
 #include "AudioStream.h"
 #include "KeyWordObserverInterface.h"
+#include "VoiceAssistant.h"
 
 #include <grpc++/grpc++.h>
 #include "google/assistant/embedded/v1alpha2/embedded_assistant.grpc.pb.h"
@@ -22,12 +23,14 @@
 
 using google::assistant::embedded::v1alpha2::AssistRequest;
 using google::assistant::embedded::v1alpha2::AssistResponse;
+using google::assistant::embedded::v1alpha2::AudioInConfig_Encoding;
 using google::assistant::embedded::v1alpha2::AudioOutConfig_Encoding;
 using google::assistant::embedded::v1alpha2::EmbeddedAssistant;
 
-namespace VoiceAssistant {
+namespace VoiceAssistantService {
 
-class GoogleVoiceAssistant : public KeyWord::KeyWordObserverInterface {
+class GoogleVoiceAssistant : public VoiceAssistant,
+                             public KeyWord::KeyWordObserverInterface {
   public:
     struct GoogleVoiceAssistantConfig {
         std::string api_endpoint;
@@ -35,22 +38,19 @@ class GoogleVoiceAssistant : public KeyWord::KeyWordObserverInterface {
         std::string device_model_id;
         std::string language_code;
         AudioOutConfig_Encoding output_encoding;
+        AudioInConfig_Encoding input_encoding;
         uint16_t output_sample_rate_hertz;
+        uint16_t input_sample_rate_hertz;
         std::string credentials_file_path;
-    };
-    enum class GVAState {
-        NOT_READY = 0,  // not ready yet
-        IDLE,
-        KEYWORD_TRIGGERED,
-        LISTENING,
-        THINKING,
-        RESPONDING,
     };
     /**
      * @brief Construct a new Google Voice Assistnat object.
      *
      */
-    GoogleVoiceAssistant(GoogleVoiceAssistantConfig&& config);
+    GoogleVoiceAssistant(
+        GoogleVoiceAssistantConfig&& config,
+        std::unique_ptr<Audio::AudioOutputStream::Writer> writer,
+        std::shared_ptr<Audio::AudioInputStream::Reader> reader);
     /**
      * @brief Destroy the Google Voice Assistnat object
      *
@@ -61,7 +61,7 @@ class GoogleVoiceAssistant : public KeyWord::KeyWordObserverInterface {
      *
      * @param keyWord
      */
-    void onKeyWordDetected(std::string keyWord) override;
+    void onKeyWordDetected(std::string keyWord, size_t readerIndex) override;
     void onStateChanged(KeyWordDetectorState state) override;
 
   private:
@@ -95,16 +95,16 @@ class GoogleVoiceAssistant : public KeyWord::KeyWordObserverInterface {
      *
      * @param newState
      */
-    void setState(GVAState&& newState);
+    void setState(
+        VoiceAssistantObserverInterface::VoiceAssistantState&& newState);
 
     AssistRequest createRequest(const std::string& textRequest);
-
-    std::shared_ptr<Audio::AudioInputStream::Reader> m_reader;
+    AssistRequest createRequest(const Audio::AudioInputStreamSize*);
 
     std::unique_ptr<std::thread> m_thread;
     std::atomic<bool> m_isRunning;
     std::mutex m_stateMtx;
-    GVAState m_state;
+    VoiceAssistantObserverInterface::VoiceAssistantState m_state;
     std::condition_variable m_cvStateChange;
     GoogleVoiceAssistantConfig m_gvaConfig;
     std::shared_ptr<grpc::CallCredentials> m_callCredentials;
@@ -113,5 +113,7 @@ class GoogleVoiceAssistant : public KeyWord::KeyWordObserverInterface {
     std::unique_ptr<grpc::ClientContext> m_clientContext;
     std::unique_ptr<grpc::ClientReaderWriter<AssistRequest, AssistResponse>>
         m_clientRW;
+    std::unique_ptr<Audio::AudioOutputStream::Writer> m_writer;
+    std::shared_ptr<Audio::AudioInputStream::Reader> m_reader;
 };
-}  // namespace VoiceAssistant
+}  // namespace VoiceAssistantService

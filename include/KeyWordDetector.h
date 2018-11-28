@@ -28,5 +28,6 @@ class KeyWordDetector {
     std::unordered_set<std::shared_ptr<KeyWordObserverInterface>>
         m_keyWordObservers;
     mutable std::mutex m_keyWordObserversMtx;
+    KeyWordObserverInterface::KeyWordDetectorState m_detectorState;
 };
 }  // namespace KeyWord
