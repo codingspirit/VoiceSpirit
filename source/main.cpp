@@ -50,21 +50,25 @@ int main(int argc, char const* argv[]) {
     auto snowBoy = std::make_unique<KeyWord::SnowBoyKeyWordDetector>(
         snowBoyReader, config, "../resources/common.res", 1.0, true);
 
-    // VoiceAssistantService::GoogleVoiceAssistant::GoogleVoiceAssistantConfig
-    // gvaConfig; gvaConfig.api_endpoint = "embeddedassistant.googleapis.com";
-    // gvaConfig.credentials_file_path = "../resources/credentials.json";
-    // gvaConfig.language_code = "en-US";
-    // gvaConfig.device_id = "default";
-    // gvaConfig.device_model_id = "default";
-    // gvaConfig.output_sample_rate_hertz = 16000;
-    // gvaConfig.output_encoding =
-    //     AudioOutConfig_Encoding::AudioOutConfig_Encoding_LINEAR16;
+    VoiceAssistantService::GoogleVoiceAssistant::GoogleVoiceAssistantConfig
+        gvaConfig;
+    gvaConfig.api_endpoint = "embeddedassistant.googleapis.com";
+    gvaConfig.credentials_file_path = "../resources/credentials.json";
+    gvaConfig.language_code = "en-US";
+    gvaConfig.device_id = "default";
+    gvaConfig.device_model_id = "default";
+    gvaConfig.output_sample_rate_hertz = 16000;
+    gvaConfig.output_encoding =
+        AudioOutConfig_Encoding::AudioOutConfig_Encoding_LINEAR16;
+    gvaConfig.input_sample_rate_hertz = 16000;
+    gvaConfig.input_encoding =
+        AudioInConfig_Encoding::AudioInConfig_Encoding_LINEAR16;
 
-    // auto gva = std::make_shared<VoiceAssistantService::GoogleVoiceAssistant>(
-    //     std::move(gvaConfig), ouputStream->createWriter(),
-    //     inputStream->createReader());
+    auto gva = std::make_shared<VoiceAssistantService::GoogleVoiceAssistant>(
+        std::move(gvaConfig), ouputStream->createWriter(),
+        inputStream->createReader());
 
-    // snowBoy->addKeyWordObserver(gva);
+    snowBoy->addKeyWordObserver(gva);
 
     while (1) {
         usleep(100000);

@@ -34,8 +34,13 @@
                 "${workspaceFolder}/include",
                 "/usr/include/c++/6.3.0",
                 "${workspaceFolder}/thirdparty/library/include",
-                "${workspaceFolder}/thirdparty/"
-            ]
+                "${workspaceFolder}/thirdparty/",
+                "/usr/local/include"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64",
+            "compilerPath": "/usr/bin/arm-linux-gnueabihf-g++"
         }
     ],
     "version": 4

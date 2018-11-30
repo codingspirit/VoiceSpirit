@@ -2,9 +2,7 @@
 
 namespace VoiceAssistantService {
 
-VoiceAssistant::VoiceAssistant()
-    : m_voiceAssistantState{
-          VoiceAssistantObserverInterface::VoiceAssistantState::NOT_READY} {}
+VoiceAssistant::VoiceAssistant(){}
 
 void VoiceAssistant::addVoiceAssistantObserver(
     std::shared_ptr<VoiceAssistantObserverInterface> VoiceAssistantObserver) {

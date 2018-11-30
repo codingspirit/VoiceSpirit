@@ -11,10 +11,14 @@ using namespace Utils::Logger;
 using BaseClass::BaseException;
 
 using google::assistant::embedded::v1alpha2::AssistConfig;
+using google::assistant::embedded::v1alpha2::AssistResponse_EventType;
 using google::assistant::embedded::v1alpha2::AudioOutConfig;
 using google::assistant::embedded::v1alpha2::ScreenOutConfig;
 using grpc::CallCredentials;
 using grpc::Channel;
+
+#define AUDIO_INPUT_MODE
+// #define TEXT_INPUT_MODE
 
 namespace VoiceAssistantService {
 
@@ -38,6 +42,7 @@ GoogleVoiceAssistant::~GoogleVoiceAssistant() {
 }
 
 void GoogleVoiceAssistant::init() {
+    // init grpc
     grpc_init();
 
     // read credentials
@@ -99,9 +104,15 @@ void GoogleVoiceAssistant::threadLoop() {
                                    "*** THREAD START ***");
     std::unique_lock<std::mutex> locker(m_stateMtx);
     AssistResponse response;
+
+#ifdef TEXT_INPUT_MODE
     std::string requestList[3] = {"what time is it", "who are you",
                                   "how is weather today"};
     int requestIndex = 0;
+#else
+    AssistRequest audioRequest = createRequest();
+    std::vector<Audio::AudioInputStreamSize> audioData;
+#endif
 
     while (m_isRunning) {
         m_cvStateChange.wait(locker, [this] {
@@ -124,7 +135,7 @@ void GoogleVoiceAssistant::threadLoop() {
                 LISTENING:
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: LISTENING");
-
+#ifdef TEXT_INPUT_MODE
                 if (!m_clientRW->Write(
                         createRequest(requestList[requestIndex]))) {
                     m_state = VoiceAssistantObserverInterface::
@@ -141,18 +152,41 @@ void GoogleVoiceAssistant::threadLoop() {
                         VoiceAssistantState::THINKING;
                     requestIndex = requestIndex >= 2 ? 0 : requestIndex + 1;
                 }
+#else
+                m_clientRW->Write(audioRequest);
+                while (!m_clientRW->Read(&response)) {
+                    audioData.resize(m_reader->getAvailableNum());
+                    size_t nRead =
+                        m_reader->read(audioData.data(), audioData.size());
+                    if (nRead > 0) {
+                        audioRequest.set_audio_in(
+                            &((audioData)[0]),
+                            audioData.size() *
+                                sizeof(Audio::AudioInputStreamSize));
+                    }
+                }
+                if (response.event_type() ==
+                    AssistResponse_EventType::
+                        AssistResponse_EventType_END_OF_UTTERANCE) {
+                    m_state = VoiceAssistantObserverInterface::
+                        VoiceAssistantState::THINKING;
+                }
+                if (response.has_audio_out()) {
+                    m_state = VoiceAssistantObserverInterface::
+                        VoiceAssistantState::RESPONDING;
+                }
+#endif
 
                 break;
             case VoiceAssistantObserverInterface::VoiceAssistantState::THINKING:
                 BasicLogger::getInstance().log(TAG, LogLevel::INFO,
                                                "GVA State: THINKING");
-                if (!m_clientRW->Read(&response)) {
-                    m_state = VoiceAssistantObserverInterface::
-                        VoiceAssistantState::IDLE;
-                    m_clientRW->Finish();
-                } else {
-                    m_state = VoiceAssistantObserverInterface::
-                        VoiceAssistantState::RESPONDING;
+                while (m_clientRW->Read(&response)) {
+                    if (response.has_audio_out()) {
+                        m_state = VoiceAssistantObserverInterface::
+                            VoiceAssistantState::RESPONDING;
+                        break;
+                    }
                 }
                 break;
             case VoiceAssistantObserverInterface::VoiceAssistantState::
@@ -198,6 +232,8 @@ void GoogleVoiceAssistant::threadLoop() {
         }
     }
     BasicLogger::getInstance().log(TAG, LogLevel::DEBUG, "*** THREAD END ***");
+    setState(VoiceAssistantObserverInterface::VoiceAssistantState::NOT_READY);
+    notifyVoiceAssistantObservers(m_state);
 }
 
 bool GoogleVoiceAssistant::refreshClient() {
@@ -255,8 +291,7 @@ AssistRequest GoogleVoiceAssistant::createRequest(
     return request;
 }
 
-AssistRequest GoogleVoiceAssistant::createRequest(
-    const Audio::AudioInputStreamSize*) {
+AssistRequest GoogleVoiceAssistant::createRequest() {
     AssistRequest request;
 
     auto* assist_config = request.mutable_config();

@@ -62,6 +62,12 @@ class GoogleVoiceAssistant : public VoiceAssistant,
      * @param keyWord
      */
     void onKeyWordDetected(std::string keyWord, size_t readerIndex) override;
+    /**
+     * @brief override KeyWordObserverInterface::onStateChanged. GVA doesn't
+     * care about this
+     *
+     * @param state
+     */
     void onStateChanged(KeyWordDetectorState state) override;
 
   private:
@@ -98,8 +104,19 @@ class GoogleVoiceAssistant : public VoiceAssistant,
     void setState(
         VoiceAssistantObserverInterface::VoiceAssistantState&& newState);
 
+    /**
+     * @brief Create a text request
+     *
+     * @param textRequest
+     * @return AssistRequest
+     */
     AssistRequest createRequest(const std::string& textRequest);
-    AssistRequest createRequest(const Audio::AudioInputStreamSize*);
+    /**
+     * @brief Create a audio request
+     *
+     * @return AssistRequest
+     */
+    AssistRequest createRequest();
 
     std::unique_ptr<std::thread> m_thread;
     std::atomic<bool> m_isRunning;
