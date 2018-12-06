@@ -37,13 +37,14 @@ Player::Player(const int sampleRate,
                                        : m_reader->getAvailableNum();
             audioData.resize(numNeedToRead);
             size_t readNum = m_reader->read(audioData.data(), audioData.size());
-
             if (readNum == 0) {
                 BasicLogger::getInstance().log(
                     TAG, LogLevel::WARNING, "reader read nothing from stream");
+                m_hasDataToPlay = false;
             } else {
                 std::memcpy(data, audioData.data(),
                             audioData.size() * sizeof(AudioOutputStreamSize));
+                m_hasDataToPlay = true;
             }
         };
         portAudioWrapper->addStream(config);
@@ -66,6 +67,7 @@ Player::~Player() {
 }
 
 bool Player::isPlaying() const { return m_isPlaying; }
+bool Player::hasDataToPlay() const { return m_hasDataToPlay; }
 
 void Player::startPlay() {
     if (m_isReady) {

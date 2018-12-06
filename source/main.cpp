@@ -25,13 +25,6 @@ int main(int argc, char const* argv[]) {
 
     recorder->startRecord();
 
-    // auto playerReader = ouputStream->createReader();
-
-    // auto player = std::make_unique<Audio::Player::Player>(
-    //     16000, 16, 1, playerReader, portAudioWrapper);
-
-    // player->startPlay();
-
     std::vector<KeyWord::SnowBoyKeyWordDetector::SnowBoyModelConfig> config;
     KeyWord::SnowBoyKeyWordDetector::SnowBoyModelConfig tConfig;
     tConfig.modelFiles = "../resources/alexa.umdl";
@@ -64,9 +57,12 @@ int main(int argc, char const* argv[]) {
     gvaConfig.input_encoding =
         AudioInConfig_Encoding::AudioInConfig_Encoding_LINEAR16;
 
+    auto gvaPlayer = std::make_unique<Audio::Player::Player>(
+        16000, 16, 1, ouputStream->createReader(), portAudioWrapper);
+
     auto gva = std::make_shared<VoiceAssistantService::GoogleVoiceAssistant>(
         std::move(gvaConfig), ouputStream->createWriter(),
-        inputStream->createReader());
+        inputStream->createReader(), std::move(gvaPlayer));
 
     snowBoy->addKeyWordObserver(gva);
 

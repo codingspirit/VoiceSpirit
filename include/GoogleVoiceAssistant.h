@@ -15,6 +15,7 @@
 
 #include "AudioStream.h"
 #include "KeyWordObserverInterface.h"
+#include "Player.h"
 #include "VoiceAssistant.h"
 
 #include <grpc++/grpc++.h>
@@ -50,7 +51,8 @@ class GoogleVoiceAssistant : public VoiceAssistant,
     GoogleVoiceAssistant(
         GoogleVoiceAssistantConfig&& config,
         std::unique_ptr<Audio::AudioOutputStream::Writer> writer,
-        std::shared_ptr<Audio::AudioInputStream::Reader> reader);
+        std::shared_ptr<Audio::AudioInputStream::Reader> reader,
+        std::unique_ptr<Audio::Player::Player> player);
     /**
      * @brief Destroy the Google Voice Assistnat object
      *
@@ -120,6 +122,7 @@ class GoogleVoiceAssistant : public VoiceAssistant,
 
     std::unique_ptr<std::thread> m_thread;
     std::atomic<bool> m_isRunning;
+    std::atomic<bool> m_isReadingInput;
     std::mutex m_stateMtx;
     VoiceAssistantObserverInterface::VoiceAssistantState m_state;
     std::condition_variable m_cvStateChange;
@@ -132,5 +135,6 @@ class GoogleVoiceAssistant : public VoiceAssistant,
         m_clientRW;
     std::unique_ptr<Audio::AudioOutputStream::Writer> m_writer;
     std::shared_ptr<Audio::AudioInputStream::Reader> m_reader;
+    std::unique_ptr<Audio::Player::Player> m_player;
 };
 }  // namespace VoiceAssistantService

@@ -17,6 +17,7 @@ class Player {
     void startPlay();
     void stopPlay();
     bool isPlaying() const;
+    bool hasDataToPlay() const;
 
     const int m_sampleRate;
     const int m_bitsPerSample;
@@ -31,6 +32,7 @@ class Player {
     std::shared_ptr<AudioOutputStream::Reader> m_reader;
     std::atomic<bool> m_isReady;
     std::atomic<bool> m_isPlaying;
+    std::atomic<bool> m_hasDataToPlay;
 };
 }  // namespace Player
 }  // namespace Audio
