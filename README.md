@@ -18,7 +18,14 @@ Hardware:
   -PI3 with a USB micphone
 
 Thirdparty Libs:
-  -portaudio
-  -asound
-  -snowboy
-  -grpc
+```make
+LDFLAGS:= \
+	-L./thirdparty/library/static_lib \
+	-lgrpc++ -lgrpc -lgrpc++_reflection -lgrpc_cronet -lgpr -lprotobuf -ldl -lares\
+	-L./thirdparty/library \
+	-lsnowboy-detect -lportaudio -lasound \
+	-L./thirdparty/library/atlas \
+	-lblas \
+	-lz \
+	-pthread
+```
