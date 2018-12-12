@@ -16,6 +16,7 @@ Then just say "jarvis" and ask any question you want. For example:
 # Requirements 
 Hardware:
   -PI3 with a USB micphone
+
 Thirdparty Libs:
   -portaudio
   -asound
